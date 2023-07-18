@@ -210,10 +210,14 @@ void spr2buffer(TFT_eSprite &spr, String &fileout, imgParam &imageParams) {
     long t = millis();
     Storage.begin();
 
-    fs::File f_out = contentFS->open(fileout, "w");
     size_t bufferSize;
 
+    if (Storage.freeSpace() < bufferSize) {
+        wsErr("low on flash. No image generated!");
+        return;
+    }
     uint8_t *blackBuffer = (uint8_t*) spr2color(spr, imageParams, &bufferSize, false);
+    fs::File f_out = contentFS->open(fileout, "w");
     if(!blackBuffer)
         return;
     f_out.write(blackBuffer, bufferSize);
