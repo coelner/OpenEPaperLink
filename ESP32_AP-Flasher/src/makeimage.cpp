@@ -50,7 +50,12 @@ void jpg2buffer(String filein, String fileout, imgParam &imageParams) {
         spr.fillSprite(TFT_WHITE);
         TJpgDec.drawFsJpg(0, 0, filein, *contentFS);
 
-        spr2buffer(spr, fileout, imageParams);
+        if (spr2buffer(spr, fileout, imageParams)) {
+	    yield(); //todo
+	}
+	else {
+           return false;
+	}
         spr.deleteSprite();
     }
 }
@@ -206,7 +211,7 @@ uint8_t *spr2color(TFT_eSprite &spr, imgParam &imageParams, size_t *buffer_size,
     return buffer;
 }
 
-void spr2buffer(TFT_eSprite &spr, String &fileout, imgParam &imageParams) {
+bool spr2buffer(TFT_eSprite &spr, String &fileout, imgParam &imageParams) {
     long t = millis();
     Storage.begin();
 
@@ -214,19 +219,19 @@ void spr2buffer(TFT_eSprite &spr, String &fileout, imgParam &imageParams) {
 
     if (Storage.freeSpace() < bufferSize) {
         wsErr("low on flash. No image generated!");
-        return;
+        return false;
     }
     uint8_t *blackBuffer = (uint8_t*) spr2color(spr, imageParams, &bufferSize, false);
     fs::File f_out = contentFS->open(fileout, "w");
     if(!blackBuffer)
-        return;
+        return false; //f_out.close() ?
     f_out.write(blackBuffer, bufferSize);
     free(blackBuffer);
     if (imageParams.hasRed) {
         uint8_t *redBuffer = (uint8_t*) spr2color(spr, imageParams, &bufferSize, true);
         if(!redBuffer) {
             imageParams.hasRed = false;
-            return;
+            return false; //f_out.close() ?
         }
         f_out.write(redBuffer, bufferSize);
         free(redBuffer);
